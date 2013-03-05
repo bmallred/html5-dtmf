@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="description" content="" />
+  <meta name="author" content="Bryan Allred" />
+
+  <title>Dialpad</title>
+  <link href="http://plus.google.com/112949321083048638287" rel="publisher" />
+
+  <style type="text/css">
+    #browser
+    {
+      display: none;
+      visibility: hidden;
+    }
+    .button
+    {
+      border: 1px solid #ddd;
+      background: #eee;
+      padding: 1em 2em;
+      margin: 0.35em;
+      cursor: pointer;
+    }
+
+    .letter
+    {
+      background: #AD0006;
+    }
+  </style>
+
+  <!--[if lt IE 9]>
+  <style type="text/css">
+    #browser
+    {
+      display: block;
+      visibility: visible;
+    }
+  </style>
+  <![endif]-->
+</head>
+<body>
+  <div id="browser">
+    <h2>Dude, you are missing are the cool stuff!</h2>
+    <p>We recommend upgrading to the latest <a href="http://ie.microsoft.com" title="Microsoft Internet Explorer">Internet Explorer</a>, <a href="http://chrome.google.com" title="Google Chrome">Google Chrome</a>, or <a href="http://mozilla.org/firefox" title="Firefox">Firefox</a>. If you are using IE 9 or later, make sure you turn off "Compatibility View".</p>
+  </div>
+
+  <form>
+    <table>
+      <tbody>
+        <tr>
+          <td><div class="button" data-high="1209" data-low="697">1</div></td>
+          <td><div class="button" data-high="1336" data-low="697">2</div></td>
+          <td><div class="button" data-high="1477" data-low="697">3</div></td>
+          <td><div class="button letter" data-high="1633" data-low="697">A</div></td>
+        </tr>
+        <tr>
+          <td><div class="button" data-high="1209" data-low="770">4</div></td>
+          <td><div class="button" data-high="1336" data-low="770">5</div></td>
+          <td><div class="button" data-high="1477" data-low="770">6</div></td>
+          <td><div class="button letter" data-high="1633" data-low="770">B</div></td>
+        </tr>
+        <tr>
+          <td><div class="button" data-high="1209" data-low="852">7</div></td>
+          <td><div class="button" data-high="1336" data-low="852">8</div></td>
+          <td><div class="button" data-high="1477" data-low="852">9</div></td>
+          <td><div class="button letter" data-high="1633" data-low="852">C</div></td>
+        </tr>
+        <tr>
+          <td><div class="button" data-high="1209" data-low="941">*</div></td>
+          <td><div class="button" data-high="1336" data-low="941">0</div></td>
+          <td><div class="button" data-high="1477" data-low="941">#</div></td>
+          <td><div class="button letter" data-high="1633" data-low="941">D</div></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2"><label for="duration">Tone length</label></td>
+          <td colspan="2"><input id="duration" type="range" min="30" max="1000" value="300" /></td>
+        </tr>
+        <tr>
+          <td colspan="2"><label for="volume">Volume</label></td>
+          <td colspan="2"><input id="volume" type="range" min="0" max="1" step="0.1" value="0.5" /></td>
+        </tr>
+      </tfoot>
+    </table>
+  </form>
+
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    $(function () {
+      var context;
+      
+      if (typeof AudioContext !== "undefined") {
+        context = new AudioContext();
+      }
+      else if (typeof webkitAudioContext !== "undefined") {
+        context = new webkitAudioContext();
+      }
+      else {
+        throw new Error("AudioContext is not support.");
+      }
+
+      // Some volume control.
+      var volume = context.createGainNode();
+      volume.gain.value = 0.5;
+      volume.connect(context.destination);
+
+      $(document).on("change", "#volume", function () {
+        volume.gain.value = $(this).val();
+        console.log("Volume: " + volume.gain.value);
+      });
+
+      // Create the oscillators.
+      var oscillatorHigh;
+      var oscillatorLow;
+
+      $(document).on("change", "#duration", function () {
+        console.log("Duration: " + $(this).val() + "ms");
+      });
+
+      // Play the tone.
+      var playTone = function (highFrequency, lowFrequency, duration) {
+        // Create the oscillator for the high frequency.
+        oscillatorHigh = context.createOscillator();
+        oscillatorHigh.type = 0;
+        oscillatorHigh.connect(volume);
+        oscillatorHigh.frequency.value = highFrequency;
+
+        // Create the oscillator for the low frequency.
+        oscillatorLow = context.createOscillator();
+        oscillatorLow.type = 0;
+        oscillatorLow.connect(volume);
+        oscillatorLow.frequency.value = lowFrequency;
+
+        // Play the multiple frequencies.
+        oscillatorLow.noteOn(0);
+        oscillatorHigh.noteOn(0);
+
+        // Only allow the oscillator to play for a specified period of time.
+        window.setTimeout(function () { 
+          stopTone();
+        }, duration);
+      };
+
+      var stopTone = function (oscillator) {
+        // Stop the high frequency.
+        if (oscillatorHigh !== undefined) {
+          oscillatorHigh.noteOff(0);
+          oscillatorHigh.disconnect();
+        }
+
+        // Stop the low frequency.
+        if (oscillatorLow !== undefined) {
+          oscillatorLow.noteOff(0);
+          oscillatorLow.disconnect();
+        }
+      };
+
+      $(document).on("mousedown", ".button", function () {
+        var high = parseInt($(this).attr("data-high"));
+        var low = parseInt($(this).attr("data-low"));
+        var duration = parseInt($("#duration").val());
+
+        playTone(high, low, duration);
+      });
+
+      $(document).on("mouseup", ".button", function () {
+        stopTone();
+      });
+    });
+  </script>
+</body>
+</html>
